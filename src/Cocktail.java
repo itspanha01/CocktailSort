@@ -1,5 +1,3 @@
-import java.util.Arrays;
-
 public class Cocktail {
     public static void CocktailSort(int array[]) {
         int start = 0;
