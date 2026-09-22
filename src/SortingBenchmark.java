@@ -4,117 +4,19 @@ import java.io.IOException;
 import java.util.Random;
 
 /**
- * Benchmarks Cocktail Sort, Insertion Sort, and Selection Sort across three
- * dataset sizes (5, 1,000, 1,000,000), recording runtime, comparisons, and
- * swaps/movements for each run. Writes the sorted output for every run to
+ * Benchmarks Bubble Sort, Cocktail Sort, Insertion Sort, and Selection Sort
+ * (each in its own class: Bubble, Cocktail, Insertion, Selection) across
+ * three dataset sizes (5, 1,000, 1,000,000). For each run it records
+ * runtime, comparisons, and swaps/movements, writes the sorted output to
  * its own .txt file, and writes a combined performance table to
  * performance_results.txt.
+ *
+ * Requires Bubble.java, Cocktail.java, Insertion.java, and Selection.java
+ * to be compiled in the same folder -- each of those classes exposes
+ * public static long comparisons / movements fields that this benchmark
+ * reads immediately after calling the sort.
  */
 public class SortingBenchmark {
-
-    /** Holds the outcome of one sort run. */
-    static class SortResult {
-        long comparisons;
-        long movements;   // "swaps" for cocktail/selection, "shifts" for insertion
-        long elapsedNanos;
-    }
-
-    // ---------- Instrumented sorting algorithms ----------
-
-    static SortResult cocktailSort(int[] arr) {
-        SortResult result = new SortResult();
-        long startTime = System.nanoTime();
-
-        int start = 0;
-        int end = arr.length - 1;
-        boolean swapped = true;
-
-        while (swapped) {
-            swapped = false;
-
-            for (int i = start; i < end; i++) {
-                result.comparisons++;
-                if (arr[i] > arr[i + 1]) {
-                    int temp = arr[i];
-                    arr[i] = arr[i + 1];
-                    arr[i + 1] = temp;
-                    result.movements++;
-                    swapped = true;
-                }
-            }
-            end--;
-
-            if (!swapped) break;
-
-            swapped = false;
-
-            for (int i = end; i > start; i--) {
-                result.comparisons++;
-                if (arr[i - 1] > arr[i]) {
-                    int temp = arr[i - 1];
-                    arr[i - 1] = arr[i];
-                    arr[i] = temp;
-                    result.movements++;
-                    swapped = true;
-                }
-            }
-            start++;
-        }
-
-        result.elapsedNanos = System.nanoTime() - startTime;
-        return result;
-    }
-
-    static SortResult insertionSort(int[] arr) {
-        SortResult result = new SortResult();
-        long startTime = System.nanoTime();
-
-        for (int i = 1; i < arr.length; i++) {
-            int key = arr[i];
-            int j = i - 1;
-
-            while (j >= 0) {
-                result.comparisons++;
-                if (arr[j] > key) {
-                    arr[j + 1] = arr[j];
-                    result.movements++;
-                    j--;
-                } else {
-                    break;
-                }
-            }
-            arr[j + 1] = key;
-        }
-
-        result.elapsedNanos = System.nanoTime() - startTime;
-        return result;
-    }
-
-    static SortResult selectionSort(int[] arr) {
-        SortResult result = new SortResult();
-        long startTime = System.nanoTime();
-
-        for (int i = 0; i < arr.length - 1; i++) {
-            int minIndex = i;
-            for (int j = i + 1; j < arr.length; j++) {
-                result.comparisons++;
-                if (arr[j] < arr[minIndex]) {
-                    minIndex = j;
-                }
-            }
-            if (minIndex != i) {
-                int temp = arr[i];
-                arr[i] = arr[minIndex];
-                arr[minIndex] = temp;
-                result.movements++;
-            }
-        }
-
-        result.elapsedNanos = System.nanoTime() - startTime;
-        return result;
-    }
-
-    // ---------- Helpers ----------
 
     static int[] generateRandomArray(int size, long seed) {
         Random rand = new Random(seed); // fixed seed: every algorithm sorts the identical input
@@ -140,11 +42,9 @@ public class SortingBenchmark {
         }
     }
 
-    // ---------- Benchmark driver ----------
-
     public static void main(String[] args) throws IOException {
         int[] sizes = {5, 1_000, 1_000_000};
-        String[] algorithmNames = {"Cocktail Sort", "Insertion Sort", "Selection Sort"};
+        String[] algorithmNames = {"Bubble Sort", "Cocktail Sort", "Insertion Sort", "Selection Sort"};
 
         String separator = "--------------------------------------------------------------------------------";
         StringBuilder report = new StringBuilder();
@@ -159,25 +59,39 @@ public class SortingBenchmark {
             for (String algoName : algorithmNames) {
                 int[] arr = originalArray.clone(); // each algorithm gets its own copy of the same input
 
-                SortResult result;
-                if (algoName.equals("Cocktail Sort")) {
-                    result = cocktailSort(arr);
+                long comparisons;
+                long movements;
+                long startTime = System.nanoTime();
+
+                if (algoName.equals("Bubble Sort")) {
+                    Bubble.BubbleSort(arr);
+                    comparisons = Bubble.comparisons;
+                    movements = Bubble.movements;
+                } else if (algoName.equals("Cocktail Sort")) {
+                    Cocktail.CocktailSort(arr);
+                    comparisons = Cocktail.comparisons;
+                    movements = Cocktail.movements;
                 } else if (algoName.equals("Insertion Sort")) {
-                    result = insertionSort(arr);
+                    Insertion.InsertionSort(arr);
+                    comparisons = Insertion.comparisons;
+                    movements = Insertion.movements;
                 } else {
-                    result = selectionSort(arr);
+                    Selection.SelectionSort(arr);
+                    comparisons = Selection.comparisons;
+                    movements = Selection.movements;
                 }
 
-                double elapsedMs = result.elapsedNanos / 1_000_000.0;
+                long elapsedNanos = System.nanoTime() - startTime;
+                double elapsedMs = elapsedNanos / 1_000_000.0;
 
                 report.append(String.format("%-15d %-15s %-15.3f %-15d %-15d%n",
-                        size, algoName, elapsedMs, result.comparisons, result.movements));
+                        size, algoName, elapsedMs, comparisons, movements));
 
                 String outFile = "sorted_" + algoName.replace(" ", "_").toLowerCase() + "_n" + size + ".txt";
                 writeArrayToFile(arr, outFile);
 
                 System.out.printf("  %-15s done in %.3f ms (%d comparisons, %d moves) -> %s%n",
-                        algoName, elapsedMs, result.comparisons, result.movements, outFile);
+                        algoName, elapsedMs, comparisons, movements, outFile);
             }
         }
 

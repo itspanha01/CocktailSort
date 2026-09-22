@@ -1,0 +1,11 @@
+Dataset Size    Algorithm       Time (ms)       Comparisons     Swaps/Moves    
+--------------------------------------------------------------------------------
+5               Cocktail Sort   0.003           10              6              
+5               Insertion Sort  0.001           9               6              
+5               Selection Sort  0.001           10              2              
+1000            Cocktail Sort   2.113           381645          249094         
+1000            Insertion Sort  1.271           250088          249094         
+1000            Selection Sort  1.463           499500          995            
+1000000         Cocktail Sort   803968.172      375285086694    250222560876   
+1000000         Insertion Sort  142209.172      250223560858    250222560876   
+1000000         Selection Sort  229207.940      499999500000    999992         
